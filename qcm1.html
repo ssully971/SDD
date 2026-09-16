@@ -1,1 +1,1026 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sémiologie - QCM d'entraînement fièvre</title>
+<style>
+/* === VARIABLES & THÈMES === */
+:root {
+  --radius-xl: 24px;
+  --radius-md: 12px;
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* THÈME SOMBRE (OLED) */
+[data-theme="dark"] {
+  --bg-app: #050505;
+  --bg-card: #141414;
+  --bg-panel: #1e1e1e;
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border: #333333;
+  
+  /* Thème HOT PINK (Histologie) */
+  --accent: #FF3EB5;
+  --accent-glow: rgba(255, 62, 181, 0.2);
+  
+  --success: #22c55e;
+  --success-bg: rgba(34, 197, 94, 0.1);
+  --warning: #facc15;
+  --warning-bg: rgba(250, 204, 21, 0.1);
+  --error: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --item-hover: rgba(255, 255, 255, 0.05);
+  --nav-glass: rgba(0, 0, 0, 0.8);
+  --flag-color: #facc15;
+  --answered-bg: #475569;
+}
+
+/* THÈME CLAIR */
+[data-theme="light"] {
+  --bg-app: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-panel: #f8fafc;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --accent: #E0369F; 
+  --accent-glow: rgba(224, 54, 159, 0.1);
+  --success: #16a34a;
+  --success-bg: #dcfce7;
+  --warning: #eab308;
+  --warning-bg: #fef9c3;
+  --error: #dc2626;
+  --error-bg: #fee2e2;
+  --item-hover: #f1f5f9;
+  --nav-glass: rgba(255, 255, 255, 0.8);
+  --flag-color: #eab308;
+  --answered-bg: #cbd5e1;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-app);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column; 
+  min-height: 100vh;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+/* === LAYOUT === */
+.screen { display: none; padding: 24px; max-width: 800px; margin: 0 auto; width: 100%; flex: 1; box-sizing: border-box; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* HEADER & NAV */
+.header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 10px 0; }
+.header-actions { display: flex; gap: 12px; align-items: center; }
+
+.home-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted); padding: 8px 12px; border-radius: 12px;
+  text-decoration: none; font-weight: 600; font-size: 0.9rem;
+  display: flex; align-items: center; gap: 6px; transition: var(--transition);
+}
+.home-btn:hover { border-color: var(--accent); color: var(--bg-app); background: var(--accent); }
+
+.icon-btn { background: transparent; border: none; cursor: pointer; color: var(--text-main); padding: 8px; border-radius: 50%; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
+.icon-btn:hover { background: var(--item-hover); transform: scale(1.1); }
+.icon-btn svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; }
+.icon-btn.active-flag svg { fill: var(--flag-color); stroke: var(--flag-color); }
+
+.timer { font-family: monospace; font-weight: 700; color: var(--accent); font-size: 1.1rem; transition: opacity 0.3s; }
+.timer.paused { opacity: 0.4; filter: grayscale(100%); }
+.timer.danger { color: var(--error); animation: pulse 1s infinite; }
+
+/* MENU MODAL */
+.nav-overlay { position: fixed; inset: 0; background: var(--nav-glass); backdrop-filter: blur(10px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.nav-overlay.open { opacity: 1; pointer-events: auto; }
+.nav-content { background: var(--bg-card); padding: 30px; border-radius: var(--radius-xl); width: 90%; max-width: 500px; max-height: 85vh; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; transform: scale(0.95); transition: var(--transition); }
+.nav-overlay.open .nav-content { transform: scale(1); }
+.nav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; overflow-y: auto; margin: 20px 0; }
+.nav-item { aspect-ratio: 1; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-app); color: var(--text-main); display: flex; justify-content: center; align-items: center; font-weight: 600; cursor: pointer; position: relative; }
+.nav-item.current { border: 2px solid var(--accent); color: var(--accent); }
+.nav-item.correct { background: var(--success); border-color: var(--success); color: white; }
+.nav-item.partial { background: var(--warning); border-color: var(--warning); color: #000; }
+.nav-item.incorrect { background: var(--error); border-color: var(--error); color: white; }
+.nav-item.answered-concours { background: var(--answered-bg); border-color: var(--answered-bg); color: white; }
+.nav-item.flagged::after { content: ''; position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; background: var(--flag-color); border-radius: 50%; box-shadow: 0 0 0 2px var(--bg-card); }
+.nav-legend { display: flex; gap: 15px; font-size: 0.8rem; justify-content: center; margin-top: 15px; color: var(--text-muted); flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* MODES DE JEU */
+.mode-selector { display: flex; gap: 20px; margin: 30px 0; justify-content: center; flex-wrap: wrap; }
+.mode-card { flex: 1; min-width: 200px; max-width: 300px; background: var(--bg-panel); border: 2px solid var(--border); border-radius: var(--radius-md); padding: 20px; cursor: pointer; transition: all 0.2s; text-align: left; }
+.mode-card:hover { border-color: var(--text-muted); }
+.mode-card.selected { border-color: var(--accent); background: var(--accent-glow); }
+.mode-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+.mode-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+
+/* CARDS */
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; box-shadow: 0 10px 15px 3px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; height: 4px; background: var(--accent); width: var(--progress-width, 0%); transition: width 0.5s ease; }
+.question-meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; }
+.question-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 8px; line-height: 1.5; }
+.question-link { font-size: 0.9rem; color: var(--warning); margin-bottom: 24px; font-style: italic; }
+
+/* ITEMS */
+.item { display: flex; gap: 16px; padding: 16px 20px; border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 12px; cursor: pointer; transition: all 0.2s; background: transparent; align-items: flex-start; }
+.item:hover:not(.locked) { border-color: var(--accent); background: var(--item-hover); }
+
+/* VERROUILLAGE DES CLICS APRÈS VALIDATION */
+.item.locked { pointer-events: none !important; cursor: default !important; }
+
+.item.selected { border-color: var(--accent); background: var(--accent-glow); color: var(--text-main); }
+.item.selected .item-letter { background: var(--accent); color: var(--bg-app); }
+.item.r-correct { border-color: var(--success) !important; background: var(--success-bg) !important; }
+.item.r-incorrect { border-color: var(--error) !important; background: var(--error-bg) !important; }
+.item.r-missed { border: 2px dashed var(--success); opacity: 0.8; position: relative; }
+.item.r-missed::after { content: "(Oublié)"; position: absolute; right: 10px; color: var(--success); font-size: 0.8rem; font-weight: bold; top: 16px; }
+
+.item-letter { font-weight: 800; color: var(--accent); background: var(--bg-panel); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0; font-size: 0.9rem; transition: var(--transition); }
+.item-text { font-size: 1rem; line-height: 1.4; display: flex; align-items: center; }
+
+/* BUTTONS */
+.btn { padding: 12px 24px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 1rem; background: var(--accent); color: var(--bg-app); transition: transform 0.1s; display: flex; align-items: center; gap: 8px; justify-content: center; }
+.btn:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-main); }
+.btn-outline:hover { background: var(--item-hover); }
+.btn-ghost { background: transparent; color: var(--text-muted); }
+.btn-danger { background: var(--error); color: white; }
+.hidden { display: none !important; }
+
+/* FEEDBACK */
+.feedback-block { margin-top: 24px; padding: 20px; border-radius: var(--radius-md); background: var(--bg-panel); border-left: 4px solid; animation: fadeIn 0.4s ease; }
+.feedback-block.correct { border-color: var(--success); background: var(--success-bg); }
+.feedback-block.partial { border-color: var(--warning); background: var(--warning-bg); }
+.feedback-block.incorrect { border-color: var(--error); background: var(--error-bg); }
+.expl-item { margin-bottom: 8px; display: block; font-size: 0.95rem; line-height: 1.5; }
+.expl-label { font-weight: bold; margin-right: 5px; }
+.expl-label.expl-vrai { color: var(--success); }
+.expl-label.expl-faux { color: var(--error); }
+
+/* DASHBOARD */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+.stat-box { background: var(--bg-panel); border: 1px solid var(--border); padding: 20px; border-radius: var(--radius-md); text-align: center; }
+.stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 5px; }
+.stat-label { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+.review-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+.filter-btn { background: var(--bg-panel); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; color: var(--text-muted); font-size: 0.9rem; transition: all 0.2s; }
+.filter-btn.active { background: var(--accent); color: var(--bg-app); border-color: var(--accent); }
+.review-list { display: flex; flex-direction: column; gap: 20px; }
+.review-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; transition: all 0.3s; }
+.review-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: var(--bg-panel); }
+.review-header:hover { background: var(--item-hover); }
+.review-status { font-weight: 700; font-size: 0.9rem; padding: 4px 10px; border-radius: 6px; }
+.st-correct { background: var(--success-bg); color: var(--success); }
+.st-partial { background: var(--warning-bg); color: var(--warning); }
+.st-incorrect { background: var(--error-bg); color: var(--error); }
+.st-skipped { background: var(--bg-app); color: var(--text-muted); }
+.review-body { padding: 20px; display: none; border-top: 1px solid var(--border); }
+.review-card.expanded .review-body { display: block; }
+.review-card.expanded .arrow { transform: rotate(180deg); }
+.arrow { transition: transform 0.3s; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<div id="navOverlay" class="nav-overlay" onclick="if(event.target === this) toggleNav()">
+  <div class="nav-content">
+    <div style="display: flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h2 style="margin:0;">Navigation</h2>
+      <button onclick="toggleNav()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-main);">✕</button>
+    </div>
+    <div class="nav-grid" id="navGrid"></div>
+    <div class="nav-legend" id="navLegend"></div>
+    <button class="btn btn-danger hidden" id="navSubmitBtn" onclick="forceFinish()" style="width:100%; margin-top:20px;">Terminer l'épreuve maintenant</button>
+  </div>
+</div>
+
+<div class="screen active" id="homeScreen" style="justify-content:center; text-align:center;">
+  <div style="font-size: 5rem; margin-bottom: 10px;">🌡️</div>
+  <h1 style="color: var(--accent); font-size: 3rem; margin: 0;">Fièvre</h1>
+  
+  <p style="color:var(--text-muted); margin-bottom:10px; margin-top:10px;">Sémiologie Adulte - QCM d'entraînement fièvre</p>
+  <p style="color:var(--text-muted); margin-bottom:20px;">15 Questions à Choix Multiples (QCM) <br>Notation: 1 pt / 0.5 pt / 0 pt (sur 20)</p>
+  
+  <h3 style="margin-top: 20px;">Choisissez votre mode :</h3>
+  <div class="mode-selector">
+    <div class="mode-card" id="modeEntrainement" onclick="selectMode('entrainement')">
+      <div class="mode-title">🎯 Mode Entraînement</div>
+      <div class="mode-desc">Chronomètre classique. La correction s'affiche immédiatement. Items bloqués après validation.</div>
+    </div>
+    <div class="mode-card" id="modeConcours" onclick="selectMode('concours')">
+      <div class="mode-title">⏳ Mode Concours</div>
+      <div class="mode-desc">Compte à rebours de 30 min. Réponses grisées, correction à la toute fin.</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap:15px; justify-content:center;">
+    <a href="../index.html" class="home-btn" style="color: var(--text-main);">Index</a>
+    <button id="startBtn" class="btn" style="width:200px;" disabled>Commencer</button>
+  </div>
+</div>
+
+<div class="screen" id="quizScreen">
+  <div class="header-bar">
+    <a href="../index.html" class="home-btn" title="Retour à l'index">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 001 1m-6 0h6"/></svg>
+      Index
+    </a>
+    <button class="icon-btn" onclick="toggleNav()" style="margin-left:10px;"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+    <div class="timer" id="timer">00:00</div>
+    <div class="header-actions">
+      <button class="icon-btn" id="flagBtn" onclick="toggleFlag()" title="Épingler la question">
+        <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+      </button>
+      <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><svg id="themeIcon" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg></button>
+    </div>
+  </div>
+
+  <div class="card" id="quizCard">
+    <div class="question-meta">
+      <span id="questionCount">Question 1/15</span>
+      <span style="opacity:0.5">Choix Multiples (QCM)</span>
+    </div>
+    <div class="question-title" id="questionText"></div>
+    <div class="question-link hidden" id="questionLink"></div>
+    <div id="itemsContainer"></div>
+    <div id="feedbackZone" class="hidden"></div>
+  </div>
+
+  <div class="actions-bar" style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <button class="btn btn-outline" onclick="prevQuestion()" id="prevBtn" style="visibility:hidden">← Retour</button>
+    <div style="flex:1"></div>
+    <button class="btn btn-ghost" onclick="skipQuestion()" id="skipBtn">Passer</button>
+    <button class="btn" onclick="validate()" id="validateBtn">Valider</button>
+    <button class="btn hidden" onclick="nextQuestion()" id="nextBtn">Suivant →</button>
+  </div>
+</div>
+
+<div class="screen" id="resultsScreen">
+  <h1 style="text-align:center; margin-bottom:30px; color:var(--accent);">Résultats</h1>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="stat-value" id="finalScoreDisplay">-</div><div class="stat-label">Note / 20</div></div>
+    <div class="stat-box"><div class="stat-value" id="accuracyDisplay">-</div><div class="stat-label">Réussite</div></div>
+    <div class="stat-box"><div class="stat-value" id="timeDisplay">-</div><div class="stat-label">Temps Total</div></div>
+  </div>
+  
+  <button class="btn btn-outline" onclick="copyErrorLog()" style="width:100%; margin-bottom:20px; border-style:dashed; justify-content:center;">📋 Copier le carnet d'erreurs</button>
+  
+  <div class="review-controls">
+    <h3 style="margin:0;">Correction Détaillée</h3>
+    <div style="display: flex; gap:10px;">
+      <button class="filter-btn active" onclick="filterReview('all', this)">Tout</button>
+      <button class="filter-btn" onclick="filterReview('incorrect', this)" style="color:var(--error); border-color:var(--error);">Erreurs</button>
+    </div>
+  </div>
+  <div class="review-list" id="reviewContainer"></div>
+  
+  <div style="display: flex; justify-content:center; gap:15px; margin-top:40px;">
+    <a href="../index.html" class="btn btn-outline" style="text-decoration:none;">Retour à l'Index</a>
+    <button class="btn" onclick="location.reload()" style="width:200px;">Recommencer</button>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// DONNÉES DU QCM : Sémiologie - Fièvre (QCM d'entraînement)
+// ==========================================
+const qcmData = [
+  {
+    id: 1,
+    enonce: "QCM 1. Concernant la définition de la fièvre :",
+    linked: "",
+    items: [
+      {t: "La fièvre correspond à une augmentation de la température corporelle supérieure à 37,8°C au réveil ou à 38°C le soir.", c: true},
+      {t: "La fièvre est un symptôme rare en pratique clinique.", c: false},
+      {t: "La référence pour mesurer la température est le matin, à jeun, avant le lever.", c: true},
+      {t: "L'effort physique peut augmenter la température corporelle d'environ 1°C.", c: true},
+      {t: "Le stress, la colère ou l'émotion n'ont aucun effet sur la température corporelle.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, C, D. Vrai.</span> Ces seuils et cette méthode de référence sont exactement ceux donnés dans le cours ; l'effort physique augmente la température d'environ 1°C.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">B. Faux.</span> La fièvre est au contraire décrite comme un symptôme très commun, le plus fréquent en pratique clinique.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Le stress, la colère ou l'émotion peuvent au contraire augmenter la température d'environ 0,5°C.</span>`
+  },
+  {
+    id: 2,
+    enonce: "QCM 2. Concernant les variations physiologiques de la température corporelle :",
+    linked: "",
+    items: [
+      {t: "La deuxième partie du cycle menstruel peut augmenter la température corporelle de 0,5 à 1°C.", c: true},
+      {t: "La prise alimentaire (postprandial) peut augmenter la température corporelle d'environ 1°C.", c: true},
+      {t: "Les saisons n'ont aucune influence sur la température corporelle, contrairement à l'effort ou au cycle menstruel.", c: false},
+      {t: "L'augmentation de température liée à l'effort physique dure plusieurs jours.", c: false},
+      {t: "La fièvre ne peut jamais être considérée comme une réponse physiologique à la maladie.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B. Vrai.</span> Ce sont exactement les valeurs données dans le cours pour ces deux variations physiologiques.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">C. Faux.</span> Les saisons peuvent au contraire faire varier la température de +/- 0,2 à 0,3°C.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Cette augmentation dure environ 20 minutes, pas plusieurs jours.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Le cours définit au contraire la fièvre comme une réponse physiologique à la maladie.</span>`
+  },
+  {
+    id: 3,
+    enonce: "QCM 3. Concernant les différences de température corporelle selon le site de mesure :",
+    linked: "",
+    items: [
+      {t: "La température rectale est légèrement supérieure à la température de référence, d'environ 0,2°C.", c: true},
+      {t: "La température buccale est inférieure à la température de référence, de 0,1 à 0,4°C.", c: true},
+      {t: "La température axillaire est supérieure à la température de référence, de 0,3 à 0,7°C.", c: false},
+      {t: "La température mesurée dans le conduit auditif est inférieure à la température de référence, de 0,5 à 0,9°C.", c: true},
+      {t: "Le noyau central du corps a une température plus stable que l'enveloppe (peau), qui varie entre 20 et 40°C.", c: true}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, D, E. Vrai.</span> Ce sont exactement les écarts donnés dans le cours pour chaque site de mesure, ainsi que la distinction entre noyau central et enveloppe cutanée.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">C. Faux.</span> La température axillaire est au contraire inférieure à la référence, pas supérieure.</span>`
+  },
+  {
+    id: 4,
+    enonce: "QCM 4. Concernant l'homéostasie de la température corporelle :",
+    linked: "",
+    items: [
+      {t: "Le fonctionnement du cerveau peut être perturbé entre 41°C et 43°C, avec un risque de convulsions.", c: true},
+      {t: "La limite tolérable de température corporelle est de 39°C.", c: false},
+      {t: "Une température corporelle élevée entraîne une augmentation de l'activité enzymatique sans aucune limite physiologique.", c: false},
+      {t: "La dénaturation des protéines n'est jamais une conséquence d'une température corporelle trop élevée.", c: false},
+      {t: "Une réduction du métabolisme n'est jamais associée à des variations extrêmes de température corporelle.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A. Vrai.</span> C'est exactement la plage de température donnée dans le cours pour ce risque de perturbation cérébrale.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">B. Faux.</span> La limite tolérable mentionnée dans le cours est de 43°C, pas 39°C.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">C. Faux.</span> Les cellules ont au contraire une sensibilité extrême à la température, sans augmentation illimitée de l'activité enzymatique.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> La dénaturation des protéines est au contraire une conséquence possible d'une température trop élevée.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Une réduction du métabolisme est au contraire citée comme conséquence associée dans le cours.</span>`
+  },
+  {
+    id: 5,
+    enonce: "QCM 5. Concernant les lois physiques régulant la transmission de la chaleur :",
+    linked: "",
+    items: [
+      {t: "La convection correspond à la transmission de chaleur par un courant d'air.", c: true},
+      {t: "L'évaporation correspond au passage de l'eau de la forme liquide à la forme gazeuse, nécessitant de la chaleur.", c: true},
+      {t: "La conduction correspond à un transfert direct de chaleur entre deux corps.", c: true},
+      {t: "La radiation correspond exclusivement à un transfert de chaleur par contact direct entre deux corps.", c: false},
+      {t: "La convection ne joue aucun rôle dans la régulation de la température corporelle.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, C. Vrai.</span> Ce sont exactement les définitions données dans le cours pour ces trois lois physiques.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> La radiation correspond à des ondes électromagnétiques ou thermiques, pas à un contact direct ; c'est la conduction qui correspond au transfert direct.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> La convection est au contraire une des lois physiques régulant la transmission de chaleur, donc pertinente pour la thermorégulation.</span>`
+  },
+  {
+    id: 6,
+    enonce: "QCM 6. Concernant les mécanismes de régulation visant à éviter l'augmentation de la chaleur :",
+    linked: "",
+    items: [
+      {t: "Pour éviter l'augmentation de la chaleur, l'organisme peut utiliser la sudation et la vasodilatation des vaisseaux cutanés.", c: true},
+      {t: "Des comportements comme l'anorexie, l'apathie ou la recherche de lieux froids peuvent contribuer à éviter l'augmentation de la chaleur.", c: true},
+      {t: "Pour éviter l'augmentation de la chaleur, l'organisme déclenche des frissons et une vasoconstriction cutanée.", c: false},
+      {t: "La température dans les vaisseaux hypothalamiques ne joue aucun rôle de référence dans la régulation thermique.", c: false},
+      {t: "L'augmentation du tonus musculaire est un mécanisme utilisé pour éviter l'augmentation de la chaleur, pas pour éviter les pertes de chaleur.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B. Vrai.</span> Ce sont exactement les mécanismes de perte de chaleur décrits dans le cours.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">C. Faux.</span> Les frissons et la vasoconstriction cutanée sont au contraire des mécanismes de gain de température, pas de perte.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Cette température est au contraire utilisée comme référence dans les mécanismes de régulation.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> C'est l'inverse : l'augmentation du tonus musculaire sert à éviter les pertes de chaleur, pas à éviter l'augmentation.</span>`
+  },
+  {
+    id: 7,
+    enonce: "QCM 7. Concernant le mécanisme physiopathologique du déclenchement de la fièvre :",
+    linked: "",
+    items: [
+      {t: "Les cytokines pyrogènes (IL1, IL6, INFγ, TNFα) peuvent agir directement sur l'hypothalamus pour déclencher la fièvre.", c: true},
+      {t: "La PGE2, produite via la Cox-2 des cellules endothéliales hypothalamiques, agit sur l'hypothalamus pour déclencher la fièvre.", c: true},
+      {t: "Les AINS inhibent la Cox-2, bloquant ainsi la production de PGE2.", c: true},
+      {t: "Les glucocorticoïdes inhibent la Cox-2 et la production des cytokines pyrogènes (IL1, IL6, INFγ, TNFα).", c: true},
+      {t: "L'arginine vasopressine, le CRF et la MSH exercent un rétrocontrôle négatif, inhibant la production des cytokines pyrogènes.", c: true}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, C, D, E. Vrai.</span> Toutes ces propositions décrivent fidèlement la cascade physiopathologique du déclenchement de la fièvre : action directe des cytokines et de la PGE2 sur l'hypothalamus, mécanismes d'action des AINS et des glucocorticoïdes, et rétrocontrôle négatif hormonal (arginine vasopressine, CRF, MSH).</span>`
+  },
+  {
+    id: 8,
+    enonce: "QCM 8. Concernant l'interrogatoire devant une fièvre (antécédents et environnement) :",
+    linked: "",
+    items: [
+      {t: "L'interrogatoire doit rechercher un contexte rural, des baignades, une exposition à la climatisation ou aux oiseaux.", c: true},
+      {t: "L'interrogatoire doit rechercher une notion de toxicomanie, de contages ou de transfusions.", c: true},
+      {t: "L'interrogatoire devant une fièvre ne doit jamais rechercher les antécédents chirurgicaux comme une opération, un geste invasif ou un acte dentaire.", c: false},
+      {t: "Un contexte gynécologique n'a aucun intérêt à rechercher devant une fièvre.", c: false},
+      {t: "L'efficacité des médicaments déjà pris n'a aucun intérêt à rechercher devant une fièvre.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B. Vrai.</span> Ce sont exactement les éléments d'environnement et d'antécédents cités dans le cours.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">C. Faux.</span> Ces antécédents chirurgicaux sont au contraire recherchés systématiquement.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Un contexte gynécologique est au contraire recherché à l'interrogatoire.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Elle est au contraire recherchée dans le cadre de l'histoire de la maladie.</span>`
+  },
+  {
+    id: 9,
+    enonce: "QCM 9. Concernant les caractéristiques de début et d'intensité de la fièvre :",
+    linked: "",
+    items: [
+      {t: "Un début brutal de la fièvre, en quelques minutes ou heures, oriente vers une infection.", c: true},
+      {t: "Un début insidieux, sur plusieurs jours ou semaines, oriente vers la tuberculose, une endocardite ou une néoplasie.", c: true},
+      {t: "Une fièvre modérée correspond à une température comprise entre 38 et 39°C.", c: true},
+      {t: "Un début progressif, sur quelques jours, oriente vers une infection plutôt que vers une maladie inflammatoire.", c: false},
+      {t: "Une fièvre dite « dangereuse » correspond à une température supérieure à 39°C.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, C. Vrai.</span> Ce sont exactement les orientations et le seuil donnés dans le cours pour le début et l'intensité de la fièvre.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Un début progressif oriente au contraire vers les maladies inflammatoires, l'infection étant plutôt associée à un début brutal.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Le seuil « dangereux » est supérieur à 41°C, pas 39°C.</span>`
+  },
+  {
+    id: 10,
+    enonce: "QCM 10. Concernant les signes de mauvaise tolérance de la fièvre :",
+    linked: "",
+    items: [
+      {t: "L'altération de l'état général, associant asthénie, anorexie et amaigrissement, est un signe de mauvaise tolérance de la fièvre.", c: true},
+      {t: "L'hypotension artérielle, le purpura et la confusion sont des signes de mauvaise tolérance de la fièvre.", c: true},
+      {t: "Une hyperthermie majeure supérieure à 41°C est un signe de mauvaise tolérance de la fièvre.", c: true},
+      {t: "La thrombopénie est un signe biologique de mauvaise tolérance de la fièvre.", c: true},
+      {t: "Ces signes de mauvaise tolérance n'ont aucun caractère prioritaire dans la démarche diagnostique devant une fièvre.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, C, D. Vrai.</span> Ce sont exactement les signes cliniques et biologiques de mauvaise tolérance cités dans le cours.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Le cours souligne au contraire qu'il est essentiel d'éliminer ces signes en priorité.</span>`
+  },
+  {
+    id: 11,
+    enonce: "QCM 11. Concernant le score qSOFA :",
+    linked: "",
+    items: [
+      {t: "Le score qSOFA prend en compte la fréquence respiratoire, les troubles des fonctions supérieures et la pression artérielle.", c: true},
+      {t: "Un score qSOFA supérieur ou égal à 2 critères permet d'identifier un patient à risque de mortalité par sepsis d'au moins 10%.", c: true},
+      {t: "Le seuil de fréquence respiratoire retenu dans le score qSOFA est supérieur ou égal à 22 par minute.", c: true},
+      {t: "Le seuil de pression artérielle systolique retenu dans le score qSOFA est inférieur ou égal à 140 mmHg.", c: false},
+      {t: "Le score de Glasgow n'est jamais utilisé dans l'évaluation des troubles des fonctions supérieures du score qSOFA.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, C. Vrai.</span> Ce sont exactement les 3 critères, le seuil de risque et le seuil de fréquence respiratoire du score qSOFA.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Le seuil retenu est inférieur ou égal à 100 mmHg, pas 140 mmHg.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Un score de Glasgow inférieur à 15 est au contraire un des critères utilisés pour ce paramètre.</span>`
+  },
+  {
+    id: 12,
+    enonce: "QCM 12. Concernant les critères du choc septique :",
+    linked: "",
+    items: [
+      {t: "Le choc septique associe notamment une hypotension avec une tension systolique inférieure à 80 mmHg et une tachycardie supérieure à 120 battements par minute.", c: true},
+      {t: "Un temps de recoloration cutanée supérieur à 3 secondes après compression d'une muqueuse est un signe d'hypoperfusion périphérique évocateur de choc septique.", c: true},
+      {t: "Le choc septique se caractérise par une tension diastolique supérieure à 100 mmHg.", c: false},
+      {t: "La marbrure cutanée et l'oligurie ne sont jamais des signes évocateurs de choc septique.", c: false},
+      {t: "Un temps de recoloration cutanée rapide, inférieur à 1 seconde, est un signe évocateur de choc septique.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B. Vrai.</span> Ce sont exactement les critères hémodynamiques et le signe de recoloration cutanée donnés dans le cours pour le choc septique.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">C. Faux.</span> Le seuil retenu pour la diastolique est inférieur à 60 mmHg, pas supérieur à 100 mmHg.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Elles en sont au contraire des signes évocateurs de choc septique.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> C'est au contraire un temps supérieur à 3 secondes qui est évocateur, pas un temps rapide.</span>`
+  },
+  {
+    id: 13,
+    enonce: "QCM 13. Concernant l'examen cardiologique devant une fièvre :",
+    linked: "",
+    items: [
+      {t: "Les signes de Roth, Janeway et Osler sont des signes cliniques évocateurs d'endocardite recherchés au niveau cardiologique.", c: true},
+      {t: "L'auscultation cardiologique peut retrouver des galops, des souffles diastoliques, des crépitants des bases ou des frottements.", c: true},
+      {t: "La percussion cardiologique peut permettre de mettre en évidence un épanchement pleural.", c: true},
+      {t: "Les signes de Roth, Janeway et Osler sont exclusivement des signes d'insuffisance cardiaque, sans lien avec l'endocardite.", c: false},
+      {t: "Le signe de Harzer se recherche par percussion, jamais par palpation.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, C. Vrai.</span> Ce sont exactement les signes évocateurs d'endocardite, les éléments d'auscultation et l'utilité de la percussion cités dans le cours.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Ils sont au contraire des signes évocateurs d'endocardite.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Le signe de Harzer se recherche par palpation, pas par percussion.</span>`
+  },
+  {
+    id: 14,
+    enonce: "QCM 14. Concernant le cas clinique de méningite chez l'enfant (signes de Kernig et Brudzinski) :",
+    linked: "",
+    items: [
+      {t: "Le signe de Kernig correspond à une résistance douloureuse à l'extension de la jambe lorsque la cuisse a été fléchie sur le bassin.", c: true},
+      {t: "Le signe de Brudzinski correspond à une abolition du réflexe rotulien lors de la percussion du tendon.", c: false},
+      {t: "Le purpura observé chez cette patiente n'a aucun lien avec l'hypothèse d'un syndrome méningé.", c: false},
+      {t: "La ponction lombaire n'a aucun intérêt pour confirmer le diagnostic de méningite chez cette patiente.", c: false},
+      {t: "Les signes de Kernig et de Brudzinski sont recherchés chez un patient en position debout.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A. Vrai.</span> C'est exactement la définition donnée dans le cas clinique.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">B. Faux.</span> Le signe de Brudzinski correspond à une flexion involontaire des membres inférieurs lors de la flexion de la nuque, pas à une abolition du réflexe rotulien.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">C. Faux.</span> Il est au contraire un élément clinique important ayant contribué à évoquer une méningite chez cette patiente.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> Elle permet au contraire de rechercher la présence de cellules pour confirmer le diagnostic.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> Ils sont recherchés chez un patient positionné sur le dos, pas debout.</span>`
+  },
+  {
+    id: 15,
+    enonce: "QCM 15. Concernant les conséquences de la fièvre et la prise en charge :",
+    linked: "",
+    items: [
+      {t: "La fièvre entraîne une augmentation du métabolisme cellulaire, avec augmentation de la fréquence et du débit cardiaque.", c: true},
+      {t: "Au-delà de 41°C, il existe un risque de défaillance multiviscérale.", c: true},
+      {t: "En cas d'étiologie évidente bénigne sans signe de gravité, le patient peut retourner à domicile, à revoir en cas d'aggravation.", c: true},
+      {t: "La fièvre entraîne systématiquement une diminution du métabolisme cellulaire.", c: false},
+      {t: "La prise en charge d'une fièvre est strictement identique quelle que soit la présence ou l'absence de signes de gravité.", c: false}
+    ],
+    expl: `<span class="expl-item"><span class="expl-label expl-vrai">A, B, C. Vrai.</span> Ce sont exactement les conséquences physiopathologiques et l'algorithme de prise en charge décrits dans le cours.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">D. Faux.</span> La fièvre entraîne au contraire une augmentation du métabolisme cellulaire, pas une diminution.</span>
+           <span class="expl-item"><span class="expl-label expl-faux">E. Faux.</span> La prise en charge dépend au contraire directement de la présence ou de l'absence de signes de gravité.</span>`
+  }
+];
+
+// ÉTAT
+let selectedMode = null;
+let currQ = 0;
+let score = 0;
+let userSel = new Set();
+let userAnswers = new Array(qcmData.length).fill(null).map(() => new Set());
+let qStatus = new Array(qcmData.length).fill(null); // 'correct', 'partial', 'incorrect', 'skipped', 'answered'
+let flaggedQs = new Set();
+let timerInt;
+let totalTimeSeconds = 0;
+let timeRemaining = 1800; // 30 mins
+let isQuizFinished = false;
+
+const themeIcon = document.getElementById("themeIcon");
+const flagBtn = document.getElementById("flagBtn");
+const card = document.getElementById("quizCard");
+const timerEl = document.getElementById("timer");
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('startBtn').addEventListener('click', startQuiz);
+});
+
+function selectMode(mode) {
+  selectedMode = mode;
+  document.getElementById('modeEntrainement').classList.remove('selected');
+  document.getElementById('modeConcours').classList.remove('selected');
+  
+  if(mode === 'entrainement') document.getElementById('modeEntrainement').classList.add('selected');
+  if(mode === 'concours') document.getElementById('modeConcours').classList.add('selected');
+  
+  document.getElementById('startBtn').disabled = false;
+  
+  let legendHtml = `
+    <div class="legend-item"><div class="dot" style="background:var(--success)"></div> Juste</div>
+    <div class="legend-item"><div class="dot" style="background:var(--warning)"></div> Partiel</div>
+    <div class="legend-item"><div class="dot" style="background:var(--error)"></div> Faux</div>
+    <div class="legend-item"><div class="dot" style="background:var(--flag-color)"></div> Épinglé</div>
+  `;
+  if(mode === 'concours') {
+    legendHtml = `
+      <div class="legend-item"><div class="dot" style="background:var(--answered-bg)"></div> Répondu</div>
+      <div class="legend-item"><div class="dot" style="background:var(--flag-color)"></div> Épinglé</div>
+    `;
+  }
+  document.getElementById('navLegend').innerHTML = legendHtml;
+}
+
+function startQuiz() {
+  if (qcmData.length === 0) {
+    alert("Veuillez d'abord insérer les questions dans la variable qcmData du code !");
+    return;
+  }
+  currQ = 0; score = 0; isQuizFinished = false;
+  qStatus = new Array(qcmData.length).fill(null);
+  userAnswers = new Array(qcmData.length).fill(null).map(() => new Set());
+  flaggedQs.clear();
+  
+  if(selectedMode === 'entrainement') totalTimeSeconds = 0;
+  if(selectedMode === 'concours') timeRemaining = 1800;
+
+  document.getElementById("homeScreen").classList.remove("active");
+  document.getElementById("resultsScreen").classList.remove("active");
+  document.getElementById("quizScreen").classList.add("active");
+  
+  if(selectedMode === 'concours') {
+    document.getElementById("navSubmitBtn").classList.remove("hidden");
+  } else {
+    document.getElementById("navSubmitBtn").classList.add("hidden");
+  }
+
+  startTimer();
+  renderQ();
+}
+
+function startTimer() {
+  clearInterval(timerInt);
+  timerEl.classList.remove("paused", "danger");
+  
+  timerInt = setInterval(() => {
+    if(selectedMode === 'entrainement') {
+      totalTimeSeconds++;
+      let m = Math.floor(totalTimeSeconds/60).toString().padStart(2,'0');
+      let s = (totalTimeSeconds%60).toString().padStart(2,'0');
+      timerEl.innerText = `${m}:${s}`;
+    } else if (selectedMode === 'concours') {
+      timeRemaining--;
+      let m = Math.floor(timeRemaining/60).toString().padStart(2,'0');
+      let s = (timeRemaining%60).toString().padStart(2,'0');
+      timerEl.innerText = `${m}:${s}`;
+      
+      if(timeRemaining <= 300) timerEl.classList.add("danger");
+      
+      if(timeRemaining <= 0) {
+        clearInterval(timerInt);
+        alert("Le temps est écoulé ! Le QCM va se soumettre automatiquement.");
+        forceFinish();
+      }
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if(selectedMode === 'entrainement') {
+    timerEl.classList.add("paused");
+    clearInterval(timerInt);
+  }
+}
+
+function resumeTimer() {
+  if(selectedMode === 'entrainement' && !isQuizFinished) {
+    startTimer();
+  }
+}
+
+function renderQ() {
+  let q = qcmData[currQ];
+  document.getElementById("questionText").innerHTML = q.enonce;
+  document.getElementById("questionCount").innerText = `Question ${currQ + 1}/${qcmData.length}`;
+  card.style.setProperty('--progress-width', `${((currQ)/qcmData.length)*100}%`);
+  
+  let linkEl = document.getElementById("questionLink");
+  if(q.linked) {
+      linkEl.innerText = q.linked;
+      linkEl.classList.remove("hidden");
+  } else {
+      linkEl.classList.add("hidden");
+  }
+
+  if(flaggedQs.has(currQ)) flagBtn.classList.add("active-flag");
+  else flagBtn.classList.remove("active-flag");
+
+  document.getElementById("prevBtn").style.visibility = currQ === 0 ? "hidden" : "visible";
+  document.getElementById("feedbackZone").classList.add("hidden");
+
+  let c = document.getElementById("itemsContainer");
+  c.innerHTML = "";
+  
+  userSel.clear();
+  if(userAnswers[currQ]) {
+    userAnswers[currQ].forEach(val => userSel.add(val));
+  }
+
+  let isLocked = (selectedMode === 'entrainement' && qStatus[currQ] !== null && qStatus[currQ] !== 'skipped');
+
+  if(selectedMode === 'entrainement') {
+    if(isLocked) {
+      document.getElementById("validateBtn").classList.add("hidden");
+      document.getElementById("skipBtn").classList.add("hidden");
+      document.getElementById("nextBtn").classList.remove("hidden");
+    } else {
+      document.getElementById("validateBtn").classList.remove("hidden");
+      document.getElementById("validateBtn").innerText = "Valider";
+      document.getElementById("skipBtn").classList.remove("hidden");
+      document.getElementById("nextBtn").classList.add("hidden");
+    }
+  } else if (selectedMode === 'concours') {
+    document.getElementById("validateBtn").classList.remove("hidden");
+    document.getElementById("validateBtn").innerText = "Enregistrer & Suivant";
+    document.getElementById("skipBtn").classList.remove("hidden");
+    document.getElementById("nextBtn").classList.add("hidden");
+    if(currQ === qcmData.length - 1) {
+       document.getElementById("validateBtn").innerText = "Enregistrer";
+    }
+  }
+
+  q.items.forEach((item, idx) => {
+    let d = document.createElement("div");
+    d.className = "item";
+    
+    if(isLocked) {
+        d.classList.add("locked");
+    }
+    
+    d.style.animation = `fadeIn 0.3s ease ${idx*0.05}s forwards`;
+    d.style.opacity = "0";
+    d.innerHTML = `<span class="item-letter">${String.fromCharCode(65+idx)}</span><span class="item-text">${item.t}</span>`;
+
+    if(userSel.has(idx)) {
+      d.classList.add("selected");
+    }
+
+    if(!isLocked) {
+      d.onclick = () => {
+        if(userSel.has(idx)) { 
+          userSel.delete(idx); 
+          d.classList.remove("selected"); 
+        } else { 
+          userSel.add(idx); 
+          d.classList.add("selected"); 
+        }
+      };
+    }
+    c.appendChild(d);
+  });
+
+  if(isLocked) restoreStateEntrainement();
+}
+
+function evaluateQuestion(index) {
+  let q = qcmData[index];
+  let ans = userAnswers[index];
+  
+  if(!ans || ans.size === 0) {
+      let correctCount = q.items.filter(i => i.c).length;
+      return { pts: 0, errs: correctCount };
+  }
+  
+  let errors = 0;
+  q.items.forEach((item, idx) => {
+    let isSelected = ans.has(idx);
+    if (item.c && !isSelected) errors++; 
+    if (!item.c && isSelected) errors++; 
+  });
+
+  if (errors === 0) return { pts: 1, errs: 0 };
+  if (errors === 1) return { pts: 0.5, errs: 1 };
+  return { pts: 0, errs: errors };
+}
+
+function validate() {
+  userAnswers[currQ] = new Set(userSel);
+
+  if(selectedMode === 'entrainement') {
+    stopTimer();
+    let result = evaluateQuestion(currQ);
+    score += result.pts;
+    
+    if (result.pts === 1) qStatus[currQ] = 'correct';
+    else if (result.pts === 0.5) qStatus[currQ] = 'partial';
+    else qStatus[currQ] = 'incorrect';
+    
+    restoreStateEntrainement();
+  } 
+  else if (selectedMode === 'concours') {
+    if(userSel.size > 0) {
+      qStatus[currQ] = 'answered';
+    } else {
+      qStatus[currQ] = null;
+    }
+    nextQuestion();
+  }
+}
+
+function skipQuestion() {
+  if(selectedMode === 'entrainement') {
+    qStatus[currQ] = 'skipped';
+    userAnswers[currQ] = new Set();
+  }
+  nextQuestion();
+}
+
+function restoreStateEntrainement() {
+  let q = qcmData[currQ];
+  let items = document.querySelectorAll(".item");
+  let ans = userAnswers[currQ];
+  
+  q.items.forEach((item, idx) => {
+    let selected = ans.has(idx);
+    
+    items[idx].classList.add("locked");
+    
+    if(item.c) {
+      if(selected) items[idx].classList.add("r-correct");
+      else items[idx].classList.add("r-missed");
+    } else {
+      if(selected) items[idx].classList.add("r-incorrect");
+    }
+  });
+  
+  if (qStatus[currQ] === 'skipped' || qStatus[currQ] === null) {
+    let fb = document.getElementById("feedbackZone");
+    fb.innerHTML = `<div class="feedback-block" style="border-color:var(--text-muted); background:var(--bg-panel);">${q.expl}</div>`;
+    fb.classList.remove("hidden");
+  } else {
+    showFeedback(qStatus[currQ], q.expl);
+  }
+  
+  document.getElementById("validateBtn").classList.add("hidden");
+  document.getElementById("skipBtn").classList.add("hidden");
+  document.getElementById("nextBtn").classList.remove("hidden");
+}
+
+function showFeedback(status, text) {
+  let fb = document.getElementById("feedbackZone");
+  fb.className = `feedback-block ${status}`;
+  fb.innerHTML = text;
+  fb.classList.remove("hidden");
+}
+
+function nextQuestion() {
+  if(currQ < qcmData.length - 1) {
+    currQ++;
+    renderQ();
+    if(selectedMode === 'entrainement') {
+        startTimer();
+    }
+  } else {
+    if(selectedMode === 'entrainement') {
+      finishQuiz();
+    } else {
+      renderQ(); 
+      let unanswered = qStatus.filter(s => s !== 'answered').length;
+      if(unanswered > 0) {
+         if(confirm(`Vous êtes à la dernière question. Il vous reste ${unanswered} question(s) sans réponse. Voulez-vous vraiment terminer l'épreuve ?`)) {
+             forceFinish();
+         }
+      } else {
+         if(confirm("Vous avez répondu à toutes les questions. Voulez-vous rendre votre copie ?")) {
+             forceFinish();
+         }
+      }
+    }
+  }
+}
+
+function prevQuestion() { 
+  if(currQ > 0) { 
+    currQ--; 
+    renderQ(); 
+    if(selectedMode === 'entrainement' && qStatus[currQ] === null) {
+        startTimer();
+    }
+  } 
+}
+
+function forceFinish() {
+  if(selectedMode === 'concours') {
+    score = 0;
+    qcmData.forEach((q, idx) => {
+      let result = evaluateQuestion(idx);
+      score += result.pts;
+      if(result.pts === 1) qStatus[idx] = 'correct';
+      else if(result.pts === 0.5) qStatus[idx] = 'partial';
+      else {
+        if(userAnswers[idx] && userAnswers[idx].size > 0) qStatus[idx] = 'incorrect';
+        else qStatus[idx] = 'skipped';
+      }
+    });
+  }
+  finishQuiz();
+}
+
+function finishQuiz() {
+  isQuizFinished = true;
+  clearInterval(timerInt);
+  
+  document.getElementById("navOverlay").classList.remove("open");
+  document.getElementById("quizScreen").classList.remove("active");
+  document.getElementById("resultsScreen").classList.add("active");
+  
+  // NOTE: On ramène le score sur 20 !
+  let maxScore = qcmData.length; // 15
+  let finalNote = (score / maxScore) * 20; 
+  finalNote = Math.round(finalNote * 100) / 100;
+  
+  let percent = Math.round((score/maxScore)*100);
+  
+  let timeStr = "";
+  if(selectedMode === 'entrainement') {
+    let m = Math.floor(totalTimeSeconds/60);
+    let s = totalTimeSeconds%60;
+    timeStr = `${m}m ${s}s`;
+  } else {
+    let timeSpent = 1800 - timeRemaining;
+    let m = Math.floor(timeSpent/60);
+    let s = timeSpent%60;
+    timeStr = `${m}m ${s}s`;
+  }
+  
+  document.getElementById("finalScoreDisplay").innerText = finalNote.toString();
+  document.getElementById("accuracyDisplay").innerText = percent + "%";
+  document.getElementById("timeDisplay").innerText = timeStr;
+  
+  generateReview('all');
+}
+
+function generateReview(filter) {
+  let container = document.getElementById("reviewContainer");
+  container.innerHTML = "";
+  
+  qcmData.forEach((q,idx) => {
+    let status = qStatus[idx];
+    if(filter === 'incorrect' && status === 'correct') return;
+    
+    let card = document.createElement("div"); card.className = "review-card";
+    let statusLabel = ""; let statusClass = "";
+    
+    if(status === 'correct') { statusLabel = "Juste (+1)"; statusClass = "st-correct"; }
+    else if(status === 'partial') { statusLabel = "Partiel (+0.5)"; statusClass = "st-partial"; }
+    else if(status === 'skipped') { statusLabel = "Oublié (0)"; statusClass = "st-skipped"; }
+    else { statusLabel = "Faux (0)"; statusClass = "st-incorrect"; }
+    
+    let header = document.createElement("div"); header.className = "review-header";
+    header.onclick = () => card.classList.toggle("expanded");
+    header.innerHTML = `<div style="display:flex; align-items:center; gap:10px;"><span style="font-weight:bold; color:var(--text-muted);">Q${idx+1}</span><span class="review-status ${statusClass}">${statusLabel}</span></div><svg class="arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>`;
+    
+    let body = document.createElement("div"); body.className = "review-body";
+    body.innerHTML += `<div style="font-weight:700; margin-bottom:5px; font-size:1.1rem;">${q.enonce}</div>`;
+    if(q.linked) body.innerHTML += `<div style="font-style:italic; font-size:0.9rem; color:var(--warning); margin-bottom:15px;">${q.linked}</div>`;
+    else body.innerHTML += `<div style="margin-bottom:15px;"></div>`;
+    
+    let userAns = userAnswers[idx] || new Set();
+    q.items.forEach((item, i) => {
+      let isSelected = userAns.has(i);
+      let isCorrect = item.c;
+      let itemClass = "";
+      if(isCorrect) itemClass = "r-correct";
+      if(isSelected && !isCorrect) itemClass = "r-incorrect";
+      if(!isSelected && isCorrect && status !== 'correct') itemClass = "r-missed";
+      
+      body.innerHTML += `<div class="item ${itemClass}" style="pointer-events:none; padding:10px 15px;"><span class="item-letter">${String.fromCharCode(65+i)}</span><span class="item-text">${item.t}</span>${isSelected ? '<span style="margin-left:auto; font-size:0.8rem; opacity:0.7;">(Coché)</span>' : ''}</div>`;
+    });
+    
+    body.innerHTML += `<div style="margin-top:20px; padding-top:15px; border-top:1px dashed var(--border);"><strong>Explication :</strong><div style="margin-top:5px; font-size:0.95rem; line-height:1.6; color:var(--text-muted);">${q.expl}</div></div>`;
+    
+    card.appendChild(header); card.appendChild(body); container.appendChild(card);
+  });
+}
+
+function copyErrorLog() {
+  let log = "=== CARNET D'ERREURS - SÉMIOLOGIE FIÈVRE ===\n\n";
+  qcmData.forEach((q,i) => {
+    if(qStatus[i] === 'correct') return;
+    log += `Q${i+1}: ${q.enonce.replace(/<[^>]*>/g, "")}\n`;
+    log += `Votre Résultat: ${qStatus[i]?.toUpperCase() || 'NON FAIT'}\n`;
+    q.items.forEach((item, idx) => {
+      let sel = userAnswers[i]?.has(idx);
+      let mark = sel ? "[X]" : "[ ]";
+      let state = item.c ? "(VRAI)" : "(FAUX)";
+      log += `${mark} ${String.fromCharCode(65+idx)}. ${item.t} ${state}\n`;
+    });
+    log += `\nExplication: ${q.expl.replace(/<[^>]*>/g, "")}\n\n----------------\n\n`;
+  });
+  navigator.clipboard.writeText(log).then(() => alert("Copié dans le presse-papier !"));
+}
+
+function filterReview(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  generateReview(type);
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  html.setAttribute("data-theme", next);
+  if(next === "light") themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />';
+  else themeIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />';
+}
+
+function toggleFlag() {
+  if(flaggedQs.has(currQ)) { flaggedQs.delete(currQ); flagBtn.classList.remove("active-flag"); }
+  else { flaggedQs.add(currQ); flagBtn.classList.add("active-flag"); }
+  updateNavGrid(); 
+}
+
+function updateNavGrid() {
+  const grid = document.getElementById("navGrid");
+  if(!grid) return;
+  grid.innerHTML = "";
+  qcmData.forEach((_, i) => {
+    let b = document.createElement("button");
+    let statusClass = "";
+    if(selectedMode === 'entrainement') {
+      if(qStatus[i] === 'correct') statusClass = "correct";
+      if(qStatus[i] === 'partial') statusClass = "partial";
+      if(qStatus[i] === 'incorrect' || qStatus[i] === 'skipped') statusClass = "incorrect";
+    } else if (selectedMode === 'concours') {
+      if(qStatus[i] === 'answered') statusClass = "answered-concours";
+    }
+    
+    let currentClass = i === currQ ? 'current' : '';
+    let flagClass = flaggedQs.has(i) ? 'flagged' : '';
+    
+    b.className = `nav-item ${statusClass} ${currentClass} ${flagClass}`;
+    b.innerText = i + 1;
+    b.onclick = () => { currQ = i; renderQ(); toggleNav(); };
+    grid.appendChild(b);
+  });
+}
+
+function toggleNav() {
+  const overlay = document.getElementById("navOverlay");
+  if(overlay.classList.contains("open")) { 
+    overlay.classList.remove("open"); 
+  } else {
+    updateNavGrid();
+    overlay.classList.add("open");
+  }
+}
+</script>
+</body>
+</html>
 
